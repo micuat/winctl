@@ -40,14 +40,15 @@ Window::~Window() {}
 
 NAN_METHOD(Window::New) {
 	if (info.IsConstructCall()) {
-		Window *obj = new Window((HWND)info[0]->IntegerValue());
+		Window *obj = new Window((HWND)info[0]->IntegerValue(Nan::GetCurrentContext()).FromJust());
 		obj->Wrap(info.This());
 		info.GetReturnValue().Set(info.This());
 	} else {
 		const int argc = 1;
 		v8::Local<v8::Value> argv[argc] = {info[0]};
 		v8::Local<v8::Function> cons = Nan::New(constructor);
-		info.GetReturnValue().Set(cons->NewInstance(argc, argv));
+		// info.GetReturnValue().Set(cons->NewInstance(argc, argv));
+		info.GetReturnValue().Set(Nan::NewInstance(cons, argc, argv).ToLocalChecked()); // Also new!
 	}
 }
 
@@ -62,7 +63,7 @@ NAN_METHOD(Window::GetActiveWindow) {
 NAN_METHOD(Window::GetWindowByClassName) {
 	v8::Local<v8::Function> cons = Nan::New(constructor);
 
-	v8::String::Utf8Value className(info[0]);
+	v8::String::Utf8Value className(v8::Isolate::GetCurrent(), info[0]);
 	std::string sClassName = std::string(*className);
 
 	HWND fgWin = FindWindowEx(0, 0, sClassName.c_str(), 0);
@@ -75,7 +76,7 @@ NAN_METHOD(Window::GetWindowByClassName) {
 NAN_METHOD(Window::GetWindowByTitleExact) {
 	v8::Local<v8::Function> cons = Nan::New(constructor);
 
-	v8::String::Utf8Value exactTitle(info[0]);
+	v8::String::Utf8Value exactTitle(v8::Isolate::GetCurrent(), info[0]);
 	std::string sExactTitle = std::string(*exactTitle);
 
 	HWND fgWin = FindWindow(NULL, sExactTitle.c_str());
@@ -98,7 +99,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam)
 
     v8::Local<v8::Value> callbackResult = Nan::MakeCallback(Nan::GetCurrentContext()->Global(), enumCallback, callbackArgc, callbackArgv);
 
-    return callbackResult->BooleanValue();
+    return callbackResult->BooleanValue(v8::Isolate::GetCurrent());
 }
 
 
@@ -166,7 +167,7 @@ NAN_METHOD(Window::getParent) {
 
 NAN_METHOD(Window::getAncestor) {
 	Window* obj = Nan::ObjectWrap::Unwrap<Window>(info.This());
-	HWND ancestorHwnd = GetAncestor(obj->windowHandle, info[0]->Int32Value());
+	HWND ancestorHwnd = GetAncestor(obj->windowHandle, info[0]->Int32Value(Nan::GetCurrentContext()).FromJust());
 	if(ancestorHwnd != NULL) {
 		info.GetReturnValue().Set(Nan::New((int)ancestorHwnd));
 	}
@@ -218,12 +219,12 @@ NAN_METHOD(Window::setForegroundWindow) {
 NAN_METHOD(Window::setWindowPos) {
 	Window* obj = Nan::ObjectWrap::Unwrap<Window>(info.This());
 
-	HWND hWndInsertAfter = (HWND)info[0]->IntegerValue();
-	int X = info[1]->Int32Value();
-	int Y = info[2]->Int32Value();
-	int cx = info[3]->Int32Value();
-	int cy = info[4]->Int32Value();
-	int uFlags = info[5]->Int32Value();
+	HWND hWndInsertAfter = (HWND)info[0]->IntegerValue(Nan::GetCurrentContext()).FromJust();
+	int X = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	int Y = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	int cx = info[3]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	int cy = info[4]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	int uFlags = info[5]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
 	SetWindowPos(obj->windowHandle, hWndInsertAfter, X, Y, cx, cy, uFlags);
 }
@@ -231,17 +232,17 @@ NAN_METHOD(Window::setWindowPos) {
 NAN_METHOD(Window::showWindow) {
 	Window* obj = Nan::ObjectWrap::Unwrap<Window>(info.This());
 
-	const int nCmdShow = info[0]->Int32Value();
+	const int nCmdShow = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
 	ShowWindow(obj->windowHandle, nCmdShow);
 }
 
 NAN_METHOD(Window::move) {
 	Window* obj = Nan::ObjectWrap::Unwrap<Window>(info.This());
 
-	const size_t x = info[0]->Int32Value();
-	const size_t y = info[1]->Int32Value();
-	const size_t w = info[2]->Int32Value();
-	const size_t h = info[3]->Int32Value();
+	const size_t x = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t y = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t w = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t h = info[3]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
 	MoveWindow(obj->windowHandle, x, y, w, h, true);
 }
@@ -252,10 +253,10 @@ NAN_METHOD(Window::moveRelative) {
 	RECT dim;
 	GetWindowRect(obj->windowHandle, &dim);
 
-	const size_t dx = info[0]->Int32Value();
-	const size_t dy = info[1]->Int32Value();
-	const size_t dw = info[2]->Int32Value();
-	const size_t dh = info[3]->Int32Value();
+	const size_t dx = info[0]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t dy = info[1]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t dw = info[2]->Int32Value(Nan::GetCurrentContext()).FromJust();
+	const size_t dh = info[3]->Int32Value(Nan::GetCurrentContext()).FromJust();
 
 	const size_t x = dim.left + dx;
 	const size_t y = dim.top + dy;
